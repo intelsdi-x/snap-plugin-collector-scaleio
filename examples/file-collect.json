@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "schedule": {
+        "type": "simple",
+        "interval": "10s"
+    },
+    "max-failures": 10,
+    "workflow": {
+        "collect": {
+            "metrics": {
+                "/intel/scaleio/*/pendingMovingOutBckRebuildJobs": {},
+                "/intel/scaleio/*/snapCapacityInUseInKb": {},
+                "/intel/scaleio/*/bckRebuildWriteBwc/numOccured": {}
+            },
+            "config": {
+                "/intel/scaleio": {
+                    "username": "admin",
+                    "password": "password",
+                    "gateway": "https://my-cluster",
+                    "verifySSL": false
+                }
+            },
+            "process": [
+                {
+                    "plugin_name": "passthru",                    
+                    "process": null,
+                    "publish": [
+                        {
+                            "plugin_name": "file",                            
+                            "config": {
+                                "file": "/tmp/snap_published_scaleio_file.log"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
