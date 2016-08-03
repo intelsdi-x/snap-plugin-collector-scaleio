@@ -19,31 +19,79 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package file
+package scaleio
 
 import (
-	"bytes"
-	"encoding/gob"
 	"testing"
-	"time"
 
 	"github.com/intelsdi-x/snap/control/plugin"
-	"github.com/intelsdi-x/snap/core"
-	"github.com/intelsdi-x/snap/core/ctypes"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestScaleIOCollection(t *testing.T) {
-	var buf bytes.Buffer
-	metrics := []plugin.MetricType{
-		*plugin.NewMetricType(core.NewNamespace("foo"), time.Now(), nil, "", 99),
-	}
-	config := make(map[string]ctypes.ConfigValue)
-	enc := gob.NewEncoder(&buf)
-	enc.Encode(metrics)
+func TestPluginCreation(t *testing.T) {
+	Convey("Meta should return the right data", t, func() {
+		metadata := Meta()
+		// Check to make sure everything matches
+		So(metadata.Name, ShouldResemble, name)
+		So(metadata.Version, ShouldResemble, version)
+		So(metadata.Type, ShouldResemble, pluginType)
+		So(metadata.AcceptedContentTypes, ShouldResemble, []string{plugin.SnapGOBContentType})
+		So(metadata.Exclusive, ShouldBeTrue)
+		So(metadata.RoutingStrategy, ShouldResemble, plugin.StickyRouting)
+	})
 
-	Convey("TestFilePublish", t, func() {
-		So(nil, ShouldBeNil)
+	Convey("Should return a new ScaleIO plugin instance", t, func() {
+		col := NewScaleIOCollector()
+		Convey("Plugin should not be nil", func() {
+			So(col, ShouldNotBeNil)
+		})
+
+		Convey("Plugin should be of the right type", func() {
+			So(col, ShouldHaveSameTypeAs, &ScaleIO{})
+		})
+	})
+}
+
+func TestConfigPolicy(t *testing.T) {
+	Convey("GetConfigPolicy should return a valid policy", t, func() {
+		s := NewScaleIOCollector()
+		policy, err := s.GetConfigPolicy()
+		Convey("No errors should occur in getting the policy", func() {
+			So(err, ShouldBeNil)
+		})
+		policies := policy.GetAll()
+		Convey("Policy node should exist", func() {
+			So(policies, ShouldHaveLength, 1)
+		})
+		node := policies[""]
+		rules := node.RulesAsTable()
+		Convey("All rules should exist in policy node", func() {
+			So(node.HasRules(), ShouldBeTrue)
+			So(rules, ShouldHaveLength, 4)
+		})
+
+		Convey("Rules table should contain gateway, username, and password", func() {
+			var names []string
+			for _, v := range rules {
+				names = append(names, v.Name)
+			}
+			So(names, ShouldContain, "gateway")
+			So(names, ShouldContain, "username")
+			So(names, ShouldContain, "password")
+		})
+	})
+}
+
+func TestGetMetricTypes(t *testing.T) {
+	Convey("GetMetricTypes should return the correct number of metrics", t, func() {
+		s := NewScaleIOCollector()
+		metrics, err := s.GetMetricTypes(plugin.NewPluginConfigType())
+		Convey("Should not return error", func() {
+			So(err, ShouldBeNil)
+		})
+		Convey("Has the correct number of metrics", func() {
+			So(metrics, ShouldHaveLength, len(metricKeys))
+		})
 	})
 }
