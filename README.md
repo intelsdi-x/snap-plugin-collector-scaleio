@@ -23,12 +23,12 @@ It's used in the [Snap framework](http://github.com/intelsdi-x/snap).
 
 ### System Requirements
 
-* [golang 1.5+](https://golang.org/dl/) (needed only for building)
+* [golang 1.6+](https://golang.org/dl/) (needed only for building)
 
 ### Installation
 
 #### Download File plugin binary:
-You can get the pre-built binaries for your OS and architecture at the [GitHub Releases](releases) page of this repository.
+You can get the pre-built binaries for your OS and architecture at the plugin's [GitHub Releases](https://github.com/intelsdi-x/snap-plugin-collector-scaleio/releases) page.
 
 #### To build the plugin binary:
 Fork https://github.com/intelsdi-x/snap-plugin-collector-scaleio
@@ -42,7 +42,7 @@ Build the plugin by running make within the cloned repo:
 ```
 $ make
 ```
-This builds the plugin in `./build/rootfs/`
+This builds the plugin in `./build/`
 
 ### Configuration and Usage
 First, be sure that you've familiarized yourself with the Snap framework by reading the
@@ -76,8 +76,8 @@ Currently, all metrics are exposed with a dynamic namespace that encompasses eac
 There are over 100 metrics exposed for each StoragePool. To prevent you from tiring your finger by scrolling too much, load the plugin into Snap and list the metrics as shown below:
 
 ```
-snapctl plugin load snap-plugin-collector-scaleio
-snapctl metric list
+snaptel plugin load snap-plugin-collector-scaleio
+snaptel metric list
 ```
 
 ### Examples
