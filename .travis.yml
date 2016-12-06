@@ -3,7 +3,7 @@ sudo: false
 language: go
 go:
 - 1.6.3
-- 1.7.1
+- 1.7.3
 env:
   global:
   - ORG_PATH=/home/travis/gopath/src/github.com/intelsdi-x
@@ -42,7 +42,7 @@ deploy:
   on:
     repo: intelsdi-x/snap-plugin-collector-scaleio
     branch: master
-    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.3"
 - provider: s3
   access_key_id: AKIAINMB43VSSPFZISAA
   secret_access_key:
@@ -56,7 +56,7 @@ deploy:
   on:
     repo: intelsdi-x/snap-plugin-collector-scaleio
     tags: true
-    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.3"
 - provider: releases
   api_key:
     secure: VkxzbEtyE4QlXqd2XZfEIg66XHL0n6GhupyE0GclnfsMwOs5fQVL+DOsce39MeDJuBtDXm5SQ4rylcLZNljtPs9/FxLf/7sjM61FWGMzX3Nq7gO6+J3kYCeTxmGBtLQlOUv6RWumUw0oEKfK0wg/1G4gcSwckf1eD2OlfD2OOWmCk21taCAvH3AsUncuSEj1xs/ylFIHts55z+G7qnWOvQPneMuzQD1ckJeZBoRbZQbxYmiPhgCtX9ArINY+oV8xnWcxUdaHlCkqwIQndeACtXKIaR38PPB8Iom80YjRHJx2Y8WisJAwLzG/cB2pz4r1p2obanqEaE2ZL5vRJ/yt3WYKWzxIYRCaPE/hPjvRHIzp56NRYxi+bt89Zc28YONhzOKpwoU5fx/NsHK6vny9p7Zd0ettFTD0j3ELXtWOCHdfLSNqbHlnCLClTA5MwRdqyU1pOpbhZ4MnnZ1Kq4HJNEcn8AHTlZWDaYwzPPt5AKcTo23G2u2MXkjazV8BEVVW5DUBv4a4jL9JbSTXytK1ClhwKuPK++mJO3jo1xM7S0Kl5YBuXNLwgg6dc0efpn6F6gOmIgABTl7j/8CCURr+GIhe+eSPdFgqgYRUbegsw7wCQZMqsPVoE5dVyDGq545GZN3viPSfuXmgroQxiv23hsc4e0/qPCpTtjWIsajhMko=
@@ -66,4 +66,4 @@ deploy:
   on:
     repo: intelsdi-x/snap-plugin-collector-scaleio
     tags: true
-    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.3"
