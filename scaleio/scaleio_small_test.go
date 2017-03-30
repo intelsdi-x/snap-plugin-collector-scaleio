@@ -64,7 +64,7 @@ func TestConfigPolicy(t *testing.T) {
 		Convey("Policy node should exist", func() {
 			So(policies, ShouldHaveLength, 1)
 		})
-		node := policies[""]
+		node := policies["intel.scaleio"]
 		rules := node.RulesAsTable()
 		Convey("All rules should exist in policy node", func() {
 			So(node.HasRules(), ShouldBeTrue)

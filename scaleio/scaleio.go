@@ -39,7 +39,7 @@ import (
 
 const (
 	name            = "scaleio"
-	version         = 1
+	version         = 2
 	pluginType      = plugin.CollectorPluginType
 	statisticsPath  = "/api/instances/StoragePool::%s/relationships/Statistics"
 	storagePoolPath = "/api/types/StoragePool/instances"
@@ -84,7 +84,7 @@ func (s *ScaleIO) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
 	config.Add(r2)
 	config.Add(r3)
 	config.Add(r4)
-	cp.Add([]string{""}, config)
+	cp.Add([]string{NS_VENDOR, NS_PLUGIN}, config)
 	return cp, nil
 }
 
