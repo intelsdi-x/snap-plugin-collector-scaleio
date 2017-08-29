@@ -7,12 +7,12 @@ This plugin supports collecting metrics from a ScaleIO cluster
 It's used in the [Snap framework](http://github.com/intelsdi-x/snap).
 
 1. [Getting Started](#getting-started)
-  * [System Requirements](#system-requirements)
-  * [Installation](#installation)
-  * [Configuration and Usage](#configuration-and-usage)
+   * [System Requirements](#system-requirements)
+   * [Installation](#installation)
+   * [Configuration and Usage](#configuration-and-usage)
 2. [Documentation](#documentation)
-  * [Collected Metrics](#collected-metrics)
-  * [Examples](#examples)
+   * [Collected Metrics](#collected-metrics)
+   * [Examples](#examples)
 3. [Roadmap](#roadmap)
 4. [Community Support](#community-support)
 5. [Contributing](#contributing)
@@ -31,7 +31,7 @@ It's used in the [Snap framework](http://github.com/intelsdi-x/snap).
 You can get the pre-built binaries for your OS and architecture at the plugin's [GitHub Releases](https://github.com/intelsdi-x/snap-plugin-collector-scaleio/releases) page.
 
 #### To build the plugin binary:
-Fork https://github.com/intelsdi-x/snap-plugin-collector-scaleio
+Fork https://github.com/intelsdi-x/snap-plugin-collector-scaleio  
 Clone repo into `$GOPATH/src/github.com/intelsdi-x/`:
 
 ```
@@ -81,7 +81,7 @@ snaptel metric list
 ```
 
 ### Examples
-There is an example config found in the [examples directory](examples/file-collect.json]
+There is an example config found in the [examples directory](examples/file-collect.json).
 
 **Example watch**
 
