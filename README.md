@@ -71,14 +71,7 @@ A full config example is below:
 ## Documentation
 
 ### Collected Metrics
-Currently, all metrics are exposed with a dynamic namespace that encompasses each StoragePool. This means that it will collect the data for all storage pools. There is an upcoming Snap feature that will allow you to specify a specific storage pool and the documentation will be updated when that feature lands.
-
-There are over 100 metrics exposed for each StoragePool. To prevent you from tiring your finger by scrolling too much, load the plugin into Snap and list the metrics as shown below:
-
-```
-snaptel plugin load snap-plugin-collector-scaleio
-snaptel metric list
-```
+List of metrics collected by this plugin can be found in [METRICS.md file](METRICS.md).
 
 ### Examples
 There is an example config found in the [examples directory](examples/file-collect.json).
