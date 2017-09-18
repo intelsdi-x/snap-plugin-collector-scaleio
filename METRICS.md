@@ -1,6 +1,8 @@
+# snap collector plugin - scaleio
+
 ## Collected Metrics
 
-This plugin has the ability to gather the following metrics:
+This plugin has the ability to gather the following metrics per each storage pool:
 
 Namespace | Data Type | Description
 ----------|-----------|-----------------------
