@@ -76,6 +76,8 @@ List of metrics collected by this plugin can be found in [METRICS.md file](METRI
 ### Examples
 There is an example config found in the [examples directory](examples/file-collect.json).
 
+All metrics are exposed with a dynamic namespace that encompasses each StoragePool. You can collect metrics from all of them or specify a storage pool that you are interested by putting its name instead wildcard - see how to specify the instance of dynamic metric in [Snap framework documentation](https://github.com/intelsdi-x/snap/blob/master/docs/TASKS.md#collect).
+
 **Example watch**
 
 ```
