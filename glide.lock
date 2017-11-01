@@ -1,10 +1,10 @@
-hash: 7f38628445e6c6cabdf5341d5ffad4bed7a2d72dc9b013b7715378441517a6e2
-updated: 2017-08-09T11:53:59.271776281+02:00
+hash: 525732d11df21b8e3d8fdccaa311f31d6d8e92edddfbe98776c6f2e5e71fc550
+updated: 2017-11-02T02:31:36.87597807+08:00
 imports:
 - name: github.com/asaskevich/govalidator
   version: 9699ab6b38bee2e02cd3fe8b99ecf67665395c96
 - name: github.com/intelsdi-x/snap
-  version: 78797b2dc0ca39e6e2bb39c56ccfea5033f3f6a4
+  version: 79e1dd457d77c985491c2f4746cbc425fb3dc2dd
   subpackages:
   - control/plugin
   - control/plugin/cpolicy
@@ -21,10 +21,10 @@ imports:
   - scheduler/wmap
 - name: github.com/robfig/cron
   version: 32d9c273155a0506d27cf73dd1246e86a470997e
-- name: github.com/Sirupsen/logrus
+- name: github.com/sirupsen/logrus
   version: be52937128b38f1d99787bb476c789e2af1147f1
 - name: golang.org/x/sys
-  version: e62c3de784db939836898e5c19ffd41bece347da
+  version: c8bc69bc2db9c57ccf979550bc69655df5039a8a
   subpackages:
   - unix
 - name: gopkg.in/yaml.v2
@@ -37,12 +37,12 @@ testImports:
 - name: github.com/jtolds/gls
   version: 8ddce2a84170772b95dd5d576c48d517b22cac63
 - name: github.com/smartystreets/assertions
-  version: 443d812296a84445c202c085f19e18fc238f8250
+  version: 4ea54c1f28ad3ae597e76607dea3871fa177e263
   subpackages:
   - internal/go-render/render
   - internal/oglematchers
 - name: github.com/smartystreets/goconvey
-  version: d4c757aa9afd1e2fc1832aaab209b5794eb336e1
+  version: 9e8dc3f972df6c8fcc0375ef492c24d0bb204857
   subpackages:
   - convey
   - convey/gotest
