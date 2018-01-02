@@ -8,9 +8,9 @@
     "workflow": {
         "collect": {
             "metrics": {
-                "/intel/scaleio/*/pendingMovingOutBckRebuildJobs": {},
-                "/intel/scaleio/*/snapCapacityInUseInKb": {},
-                "/intel/scaleio/*/bckRebuildWriteBwc/numOccured": {}
+                "/intel/scaleio/storagePool/*/pendingMovingOutBckRebuildJobs": {},
+                "/intel/scaleio/storagePool/*/snapCapacityInUseInKb": {},
+                "/intel/scaleio/storagePool/*/bckRebuildWriteBwc/numOccured": {}
             },
             "config": {
                 "/intel/scaleio": {
@@ -20,18 +20,12 @@
                     "verifySSL": false
                 }
             },
-            "process": [
+            "publish": [
                 {
-                    "plugin_name": "passthru",                    
-                    "process": null,
-                    "publish": [
-                        {
-                            "plugin_name": "file",                            
-                            "config": {
-                                "file": "/tmp/snap_published_scaleio_file.log"
-                            }
-                        }
-                    ]
+                  "plugin_name": "file",
+                  "config": {
+                    "file": "/tmp/published_sio_data"
+                  }
                 }
             ]
         }
