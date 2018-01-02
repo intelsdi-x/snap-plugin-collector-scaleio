@@ -7,6 +7,10 @@ import (
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
+const (
+	storagePoolIDIdx = 3
+)
+
 func (s *ScaleIO) poolMetrics(nss []plugin.Namespace) ([]plugin.Metric, error) {
 
 	results := []plugin.Metric{}
@@ -32,9 +36,9 @@ func (s *ScaleIO) poolMetrics(nss []plugin.Namespace) ([]plugin.Metric, error) {
 			// Slice out only the important part for now
 			dyn := make([]plugin.NamespaceElement, len(ns))
 			copy(dyn, ns)
-			dyn[3].Value = id
+			dyn[storagePoolIDIdx].Value = id
 
-			currentNamespace := ns.Strings()[4:]
+			currentNamespace := ns.Strings()[storagePoolIDIdx+1:]
 			var data interface{}
 			if len(currentNamespace) == 1 {
 				data = metrics[currentNamespace[0]]
