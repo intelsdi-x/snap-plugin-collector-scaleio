@@ -20,13 +20,15 @@ limitations under the License.
 package main
 
 import (
-	"os"
-
 	"github.com/intelsdi-x/snap-plugin-collector-scaleio/scaleio"
-	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
+)
+
+const (
+	pluginName    = "scaleio"
+	pluginVersion = 3
 )
 
 func main() {
-	meta := scaleio.Meta()
-	plugin.Start(meta, scaleio.NewScaleIOCollector(), os.Args[1])
+	plugin.StartCollector(scaleio.NewScaleIOCollector(), pluginName, pluginVersion)
 }

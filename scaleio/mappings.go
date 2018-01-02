@@ -1,6 +1,6 @@
 package scaleio
 
-var metricKeys = [][]string{
+var storagePoolMetricKeys = [][]string{
 	[]string{"pendingMovingOutBckRebuildJobs"},
 	[]string{"secondaryVacInKb"},
 	[]string{"numOfDevices"},

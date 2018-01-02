@@ -28,37 +28,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"time"
 
-	"github.com/intelsdi-x/snap/control/plugin"
-	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
-	"github.com/intelsdi-x/snap/core"
-	"github.com/intelsdi-x/snap/core/cdata"
-	"github.com/intelsdi-x/snap/core/ctypes"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
 const (
 	name            = "scaleio"
 	version         = 2
-	pluginType      = plugin.CollectorPluginType
 	statisticsPath  = "/api/instances/StoragePool::%s/relationships/Statistics"
 	storagePoolPath = "/api/types/StoragePool/instances"
 	NS_VENDOR       = "intel"
 	NS_PLUGIN       = "scaleio"
+	NS_SP           = "storagePool"
 )
 
-//Meta returns plugin metadata
-func Meta() *plugin.PluginMeta {
-	return plugin.NewPluginMeta(
-		name,
-		version,
-		pluginType,
-		[]string{plugin.SnapGOBContentType},
-		[]string{plugin.SnapGOBContentType},
-		plugin.Exclusive(true),
-		plugin.RoutingStrategy(plugin.StickyRouting))
-}
-
+// ScaleIO struct implements the collector interface and stores the target
+// system URL and credentials
 type ScaleIO struct {
 	token   string
 	client  *http.Client
@@ -71,89 +56,66 @@ func NewScaleIOCollector() *ScaleIO {
 
 }
 
-func (s *ScaleIO) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
-	cp := cpolicy.New()
-	config := cpolicy.NewPolicyNode()
+// GetConfigPolicy implements the collector interface requirements
+func (s *ScaleIO) GetConfigPolicy() (plugin.ConfigPolicy, error) {
+	config := plugin.NewConfigPolicy()
 
-	r1, _ := cpolicy.NewStringRule("gateway", true)
-	r2, _ := cpolicy.NewStringRule("username", true)
-	r3, _ := cpolicy.NewStringRule("password", true)
-	r4, _ := cpolicy.NewBoolRule("verifySSL", true, true)
+	config.AddNewStringRule([]string{"intel", "scaleio"}, "gateway", true)
+	config.AddNewStringRule([]string{"intel", "scaleio"}, "username", true)
+	config.AddNewStringRule([]string{"intel", "scaleio"}, "password", true)
+	config.AddNewBoolRule([]string{"intel", "scaleio"}, "verifySSL", true, plugin.SetDefaultBool(true))
 
-	config.Add(r1)
-	config.Add(r2)
-	config.Add(r3)
-	config.Add(r4)
-	cp.Add([]string{NS_VENDOR, NS_PLUGIN}, config)
-	return cp, nil
+	return *config, nil
 }
 
-func (s *ScaleIO) GetMetricTypes(cfg plugin.ConfigType) ([]plugin.MetricType, error) {
-	mts := make([]plugin.MetricType, len(metricKeys))
+// GetMetricTypes implements the collector interface requirements
+func (s *ScaleIO) GetMetricTypes(_ plugin.Config) ([]plugin.Metric, error) {
+	mts := make([]plugin.Metric, len(storagePoolMetricKeys))
 	for i := 0; i < len(mts); i++ {
-		namespace := core.NewNamespace(NS_VENDOR, NS_PLUGIN)
-		namespace = namespace.AddDynamicElement("StoragePool", "The specific storage pool ID to collect from")
-		namespace = namespace.AddStaticElements(metricKeys[i]...)
-		mts[i].Namespace_ = namespace
+		namespace := plugin.NewNamespace(NS_VENDOR, NS_PLUGIN, NS_SP)
+		namespace = namespace.AddDynamicElement("storagePoolID", "The specific storage pool ID to collect from")
+		namespace = namespace.AddStaticElements(storagePoolMetricKeys[i]...)
+		mts[i].Namespace = namespace
 	}
 	return mts, nil
 }
 
-func (s *ScaleIO) CollectMetrics(mts []plugin.MetricType) ([]plugin.MetricType, error) {
+// CollectMetrics implements the collector interface requirements
+func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	if s.token == "" || s.client == nil || s.address == nil {
-		err := s.initConnection(mts[0].Config())
+		err := s.initConnection(mts[0].Config)
 		if err != nil {
 			return nil, err
 		}
 	}
-	var returnMts []plugin.MetricType
-	// Everything is dynamic right now so get the list of all the StoragePools
-	var pools []map[string]interface{}
-	err := s.getAPIResponse(storagePoolPath, &pools)
+
+	poolReqs := []plugin.Namespace{}
+
+	for _, m := range mts {
+		ns := m.Namespace
+		switch ns[2].Value {
+		case NS_SP:
+			poolReqs = append(poolReqs, ns)
+		default:
+			return nil, fmt.Errorf("Requested metric %s does not match any known scaleio metric", m.Namespace.String())
+		}
+	}
+
+	metrics := []plugin.Metric{}
+
+	poolMts, err := s.poolMetrics(poolReqs)
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now()
-	for _, v := range pools {
-		id, ok := v["id"].(string)
-		if !ok {
-			return nil, fmt.Errorf("Found StoragePool entry without an ID")
-		}
-		var metrics map[string]interface{}
-		err := s.getAPIResponse(fmt.Sprintf(statisticsPath, id), &metrics)
-		if err != nil {
-			return nil, err
-		}
-		for _, m := range mts {
-			// Slice out only the important part for now
-			currentNamespace := m.Namespace().Strings()[3:]
-			newNS := append([]string{NS_VENDOR, NS_PLUGIN, id}, currentNamespace...)
-			var data interface{}
-			if len(currentNamespace) == 1 {
-				data = metrics[currentNamespace[0]]
-			} else if len(currentNamespace) == 2 {
-				subMap, ok := metrics[currentNamespace[0]].(map[string]interface{})
-				if !ok {
-					return nil, fmt.Errorf("Invalid data found for %s with on StoragePool %s", m.Namespace(), id)
-				}
-				data = subMap[currentNamespace[1]]
-			} else {
-				return nil, fmt.Errorf("Invalid metric namespace given: %v", m.Namespace)
-			}
-			newMetric := plugin.MetricType{
-				Namespace_: core.NewNamespace(newNS...),
-				Timestamp_: now,
-				Data_:      data,
-			}
-			returnMts = append(returnMts, newMetric)
-		}
-	}
-	return returnMts, nil
+	metrics = append(metrics, poolMts...)
+
+	return metrics, nil
 }
 
-func (s *ScaleIO) initConnection(cfg *cdata.ConfigDataNode) error {
+func (s *ScaleIO) initConnection(cfg plugin.Config) error {
 	var c *http.Client
-	if !cfg.Table()["verifySSL"].(ctypes.ConfigValueBool).Value {
+	verifySSL, _ := cfg.GetBool("verifySSL")
+	if !verifySSL {
 		c = &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -163,7 +125,8 @@ func (s *ScaleIO) initConnection(cfg *cdata.ConfigDataNode) error {
 		c = &http.Client{}
 	}
 	s.client = c
-	u, err := url.Parse(cfg.Table()["gateway"].(ctypes.ConfigValueStr).Value)
+	gateway, _ := cfg.GetString("gateway")
+	u, err := url.Parse(gateway)
 	if err != nil {
 		return fmt.Errorf("Error while parsing gateway URL: %v", err)
 	}
@@ -173,8 +136,8 @@ func (s *ScaleIO) initConnection(cfg *cdata.ConfigDataNode) error {
 	*loginURL = *s.address
 	loginURL.Path = "/api/login"
 	req, _ := http.NewRequest("GET", loginURL.String(), nil)
-	username := cfg.Table()["username"].(ctypes.ConfigValueStr).Value
-	password := cfg.Table()["password"].(ctypes.ConfigValueStr).Value
+	username, _ := cfg.GetString("username")
+	password, _ := cfg.GetString("password")
 	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 	resp, err := s.client.Do(req)
 	if err != nil {
