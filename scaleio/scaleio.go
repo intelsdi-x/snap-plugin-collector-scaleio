@@ -20,15 +20,9 @@ limitations under the License.
 package scaleio
 
 import (
-	"bytes"
-	"crypto/tls"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 
+	sioclient "github.com/intelsdi-x/snap-plugin-collector-scaleio/scaleio/client"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
@@ -45,23 +39,15 @@ const (
 // ScaleIO struct implements the collector interface and stores the target
 // system URL and credentials
 type ScaleIO struct {
-	clientCache map[string]SIOClient
-}
-
-// SIOClient stores available clients for usage without needing to reauth
-type SIOClient struct {
-	token   string
-	client  *http.Client
-	address *url.URL
+	clientCache map[string]*sioclient.SIOClient
 }
 
 //NewScaleIOCollector returns an instance of scaleIOCollector
 func NewScaleIOCollector() *ScaleIO {
-	clientCache := make(map[string]SIOClient)
+	clientCache := make(map[string]*sioclient.SIOClient)
 	return &ScaleIO{
 		clientCache: clientCache,
 	}
-
 }
 
 // GetConfigPolicy implements the collector interface requirements
@@ -90,21 +76,16 @@ func (s *ScaleIO) GetMetricTypes(_ plugin.Config) ([]plugin.Metric, error) {
 
 // CollectMetrics implements the collector interface requirements
 func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
-	var client SIOClient
-	gateway, err := mts[0].Config.GetString("gateway")
+	// get the client - this a helper that also initialized the client if needed
+	// we get a client from a cache if we have to
+	client, err := s.GetSIOClient(mts[0].Config)
 	if err != nil {
 		return nil, err
 	}
-	cachedClient, ok := s.clientCache[gateway]
-	if !ok {
-		newClient, err := s.initConnection(mts[0].Config)
-		if err != nil {
-			return nil, err
-		}
-		s.clientCache[newClient.address.String()] = newClient
-		client = newClient
-	} else {
-		client = cachedClient
+	// ensure this is called frequently, we will cache the token and handle expiration
+	err = client.Authenticate()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to authenticate SIO API Client")
 	}
 
 	poolReqs := []plugin.Namespace{}
@@ -130,60 +111,36 @@ func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	return metrics, nil
 }
 
-func (s *ScaleIO) initConnection(cfg plugin.Config) (SIOClient, error) {
-	sioClient := SIOClient{}
-	var c *http.Client
-	verifySSL, _ := cfg.GetBool("verifySSL")
-	if !verifySSL {
-		c = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
+// GetSIOClient returns an SIOClient or creates one as needed
+func (s *ScaleIO) GetSIOClient(cfg plugin.Config) (*sioclient.SIOClient, error) {
+	var client *sioclient.SIOClient
+	gateway, err := cfg.GetString("gateway")
+	if err != nil {
+		return &sioclient.SIOClient{}, err
+	}
+	username, err := cfg.GetString("username")
+	if err != nil {
+		return &sioclient.SIOClient{}, err
+	}
+	password, err := cfg.GetString("password")
+	if err != nil {
+		return &sioclient.SIOClient{}, err
+	}
+	verifySSL, err := cfg.GetBool("verifySSL")
+	if err != nil {
+		return &sioclient.SIOClient{}, err
+	}
+	cachedClient, ok := s.clientCache[gateway]
+	if !ok {
+		newClient, err := sioclient.NewSIOClient(gateway, username, password, verifySSL)
+		if err != nil {
+			return &sioclient.SIOClient{}, err
 		}
+		s.clientCache[gateway] = newClient
+		client = newClient
 	} else {
-		c = &http.Client{}
+		// TODO: add check for task config updated - new creds/etc
+		client = cachedClient
 	}
-	sioClient.client = c
-	gateway, _ := cfg.GetString("gateway")
-	u, err := url.Parse(gateway)
-	if err != nil {
-		return SIOClient{}, fmt.Errorf("Error while parsing gateway URL: %v", err)
-	}
-	sioClient.address = u
-	loginURL := &url.URL{}
-	//Make a copy of the base URL
-	*loginURL = *sioClient.address
-	loginURL.Path = "/api/login"
-	req, _ := http.NewRequest("GET", loginURL.String(), nil)
-	username, _ := cfg.GetString("username")
-	password, _ := cfg.GetString("password")
-	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
-	resp, err := sioClient.client.Do(req)
-	if err != nil {
-		return SIOClient{}, fmt.Errorf("Error while logging in to ScaleIO API: %v", err)
-	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	// Strip out the quotes
-	body = bytes.Trim(body, "\"")
-	body = append([]byte(":"), body...)
-	sioClient.token = base64.StdEncoding.EncodeToString(body)
-	return sioClient, nil
-}
-
-func (s *ScaleIO) getAPIResponse(client SIOClient, path string, v interface{}) error {
-	fullURL := &url.URL{}
-	*fullURL = *client.address
-	fullURL.Path = path
-	req, _ := http.NewRequest("GET", fullURL.String(), nil)
-	req.Header.Add("Authorization", "Basic "+client.token)
-	resp, err := client.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error while accessing ScaleIO API: %v", err)
-	}
-	defer resp.Body.Close()
-	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
-		return fmt.Errorf("Error while parsing data from %s: %v", path, err)
-	}
-	return nil
+	return client, nil
 }
