@@ -91,7 +91,10 @@ func (s *ScaleIO) GetMetricTypes(_ plugin.Config) ([]plugin.Metric, error) {
 // CollectMetrics implements the collector interface requirements
 func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	var client SIOClient
-	gateway, _ := mts[0].Config.GetString("gateway")
+	gateway, err := mts[0].Config.GetString("gateway")
+	if err != nil {
+		return nil, err
+	}
 	cachedClient, ok := s.clientCache[gateway]
 	if !ok {
 		newClient, err := s.initConnection(mts[0].Config)
