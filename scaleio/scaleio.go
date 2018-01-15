@@ -61,7 +61,6 @@ func NewScaleIOCollector() *ScaleIO {
 	return &ScaleIO{
 		clientCache: clientCache,
 	}
-
 }
 
 // GetConfigPolicy implements the collector interface requirements
@@ -182,8 +181,18 @@ func (s *ScaleIO) getAPIResponse(client SIOClient, path string, v interface{}) e
 		return fmt.Errorf("Error while accessing ScaleIO API: %v", err)
 	}
 	defer resp.Body.Close()
+	// if our token has expired, fail out but invalidate the client so we
+	// reauthenticate on the next try
+	if resp.StatusCode == http.StatusUnauthorized {
+		s.removeCachedClient(client.address.String())
+		return fmt.Errorf("Error while accessing ScaleIO API: Token Expired or Invalid")
+	}
 	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
 		return fmt.Errorf("Error while parsing data from %s: %v", path, err)
 	}
 	return nil
+}
+
+func (s *ScaleIO) removeCachedClient(gatewayAddress string) {
+	delete(s.clientCache, gatewayAddress)
 }
