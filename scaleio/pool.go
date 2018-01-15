@@ -11,13 +11,13 @@ const (
 	storagePoolIDIdx = 3
 )
 
-func (s *ScaleIO) poolMetrics(nss []plugin.Namespace) ([]plugin.Metric, error) {
+func (s *ScaleIO) poolMetrics(client SIOClient, nss []plugin.Namespace) ([]plugin.Metric, error) {
 
 	results := []plugin.Metric{}
 
 	// Everything is dynamic right now so get the list of all the StoragePools
 	var pools []map[string]interface{}
-	err := s.getAPIResponse(storagePoolPath, &pools)
+	err := s.getAPIResponse(client, storagePoolPath, &pools)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (s *ScaleIO) poolMetrics(nss []plugin.Namespace) ([]plugin.Metric, error) {
 			return nil, fmt.Errorf("Found StoragePool entry without an ID")
 		}
 		var metrics map[string]interface{}
-		err := s.getAPIResponse(fmt.Sprintf(statisticsPath, id), &metrics)
+		err := s.getAPIResponse(client, fmt.Sprintf(statisticsPath, id), &metrics)
 		if err != nil {
 			return nil, err
 		}

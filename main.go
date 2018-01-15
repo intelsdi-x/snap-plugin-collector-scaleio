@@ -26,7 +26,7 @@ import (
 
 const (
 	pluginName    = "scaleio"
-	pluginVersion = 3
+	pluginVersion = 4
 )
 
 func main() {

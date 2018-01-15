@@ -45,6 +45,11 @@ const (
 // ScaleIO struct implements the collector interface and stores the target
 // system URL and credentials
 type ScaleIO struct {
+	clientCache map[string]SIOClient
+}
+
+// SIOClient stores available clients for usage without needing to reauth
+type SIOClient struct {
 	token   string
 	client  *http.Client
 	address *url.URL
@@ -52,7 +57,10 @@ type ScaleIO struct {
 
 //NewScaleIOCollector returns an instance of scaleIOCollector
 func NewScaleIOCollector() *ScaleIO {
-	return &ScaleIO{}
+	clientCache := make(map[string]SIOClient)
+	return &ScaleIO{
+		clientCache: clientCache,
+	}
 
 }
 
@@ -82,11 +90,21 @@ func (s *ScaleIO) GetMetricTypes(_ plugin.Config) ([]plugin.Metric, error) {
 
 // CollectMetrics implements the collector interface requirements
 func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
-	if s.token == "" || s.client == nil || s.address == nil {
-		err := s.initConnection(mts[0].Config)
+	var client SIOClient
+	gateway, err := mts[0].Config.GetString("gateway")
+	if err != nil {
+		return nil, err
+	}
+	cachedClient, ok := s.clientCache[gateway]
+	if !ok {
+		newClient, err := s.initConnection(mts[0].Config)
 		if err != nil {
 			return nil, err
 		}
+		s.clientCache[newClient.address.String()] = newClient
+		client = newClient
+	} else {
+		client = cachedClient
 	}
 
 	poolReqs := []plugin.Namespace{}
@@ -103,7 +121,7 @@ func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 
 	metrics := []plugin.Metric{}
 
-	poolMts, err := s.poolMetrics(poolReqs)
+	poolMts, err := s.poolMetrics(client, poolReqs)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +130,8 @@ func (s *ScaleIO) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	return metrics, nil
 }
 
-func (s *ScaleIO) initConnection(cfg plugin.Config) error {
+func (s *ScaleIO) initConnection(cfg plugin.Config) (SIOClient, error) {
+	sioClient := SIOClient{}
 	var c *http.Client
 	verifySSL, _ := cfg.GetBool("verifySSL")
 	if !verifySSL {
@@ -124,41 +143,41 @@ func (s *ScaleIO) initConnection(cfg plugin.Config) error {
 	} else {
 		c = &http.Client{}
 	}
-	s.client = c
+	sioClient.client = c
 	gateway, _ := cfg.GetString("gateway")
 	u, err := url.Parse(gateway)
 	if err != nil {
-		return fmt.Errorf("Error while parsing gateway URL: %v", err)
+		return SIOClient{}, fmt.Errorf("Error while parsing gateway URL: %v", err)
 	}
-	s.address = u
+	sioClient.address = u
 	loginURL := &url.URL{}
 	//Make a copy of the base URL
-	*loginURL = *s.address
+	*loginURL = *sioClient.address
 	loginURL.Path = "/api/login"
 	req, _ := http.NewRequest("GET", loginURL.String(), nil)
 	username, _ := cfg.GetString("username")
 	password, _ := cfg.GetString("password")
 	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
-	resp, err := s.client.Do(req)
+	resp, err := sioClient.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error while logging in to ScaleIO API: %v", err)
+		return SIOClient{}, fmt.Errorf("Error while logging in to ScaleIO API: %v", err)
 	}
 	defer resp.Body.Close()
 	body, _ := ioutil.ReadAll(resp.Body)
 	// Strip out the quotes
 	body = bytes.Trim(body, "\"")
 	body = append([]byte(":"), body...)
-	s.token = base64.StdEncoding.EncodeToString(body)
-	return nil
+	sioClient.token = base64.StdEncoding.EncodeToString(body)
+	return sioClient, nil
 }
 
-func (s *ScaleIO) getAPIResponse(path string, v interface{}) error {
+func (s *ScaleIO) getAPIResponse(client SIOClient, path string, v interface{}) error {
 	fullURL := &url.URL{}
-	*fullURL = *s.address
+	*fullURL = *client.address
 	fullURL.Path = path
 	req, _ := http.NewRequest("GET", fullURL.String(), nil)
-	req.Header.Add("Authorization", "Basic "+s.token)
-	resp, err := s.client.Do(req)
+	req.Header.Add("Authorization", "Basic "+client.token)
+	resp, err := client.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("Error while accessing ScaleIO API: %v", err)
 	}
