@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	sioclient "github.com/intelsdi-x/snap-plugin-collector-scaleio/scaleio/client"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
@@ -11,13 +12,13 @@ const (
 	storagePoolIDIdx = 3
 )
 
-func (s *ScaleIO) poolMetrics(client SIOClient, nss []plugin.Namespace) ([]plugin.Metric, error) {
+func (s *ScaleIO) poolMetrics(client *sioclient.SIOClient, nss []plugin.Namespace) ([]plugin.Metric, error) {
 
 	results := []plugin.Metric{}
 
 	// Everything is dynamic right now so get the list of all the StoragePools
 	var pools []map[string]interface{}
-	err := s.getAPIResponse(client, storagePoolPath, &pools)
+	err := client.GetAPIResponse(storagePoolPath, &pools)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +29,7 @@ func (s *ScaleIO) poolMetrics(client SIOClient, nss []plugin.Namespace) ([]plugi
 			return nil, fmt.Errorf("Found StoragePool entry without an ID")
 		}
 		var metrics map[string]interface{}
-		err := s.getAPIResponse(client, fmt.Sprintf(statisticsPath, id), &metrics)
+		err := client.GetAPIResponse(fmt.Sprintf(statisticsPath, id), &metrics)
 		if err != nil {
 			return nil, err
 		}
