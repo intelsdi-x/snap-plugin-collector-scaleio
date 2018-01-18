@@ -62,7 +62,7 @@ func NewSIOClient(gateway string, username string, password string, verifySSL bo
 	return s, nil
 }
 
-// Authenticate regenerates a token and creates a tokentracker to reauth for us
+// Authenticate regenerates a token and stores token expiration times to reauth for us
 func (c *SIOClient) Authenticate() error {
 	// if this isn't the first attempt, see if the there is time remaining on the token
 	if c.token != "" {
@@ -104,11 +104,11 @@ func (c *SIOClient) Authenticate() error {
 
 // Logout invalidates current token and cient session
 func (c *SIOClient) Logout() error {
-	loginURL := &url.URL{}
+	logoutURL := &url.URL{}
 	//Make a copy of the base URL
-	*loginURL = *c.address
-	loginURL.Path = "/api/logout"
-	req, err := http.NewRequest("GET", loginURL.String(), nil)
+	*logoutURL = *c.address
+	logoutURL.Path = "/api/logout"
+	req, err := http.NewRequest("GET", logoutURL.String(), nil)
 	if err != nil {
 		return fmt.Errorf("Error while creating logout request: %v", err)
 	}
