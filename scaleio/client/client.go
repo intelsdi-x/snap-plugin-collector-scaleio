@@ -83,7 +83,10 @@ func (c *SIOClient) Authenticate() error {
 	//Make a copy of the base URL
 	*loginURL = *c.address
 	loginURL.Path = "/api/login"
-	req, _ := http.NewRequest("GET", loginURL.String(), nil)
+	req, err := http.NewRequest("GET", loginURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("Error while creating login request: %v", err)
+	}
 	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.username+":"+c.password)))
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -105,7 +108,10 @@ func (c *SIOClient) Logout() error {
 	//Make a copy of the base URL
 	*loginURL = *c.address
 	loginURL.Path = "/api/logout"
-	req, _ := http.NewRequest("GET", loginURL.String(), nil)
+	req, err := http.NewRequest("GET", loginURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("Error while creating logout request: %v", err)
+	}
 	req.Header.Add("Authorization", "Basic "+c.token)
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -123,7 +129,10 @@ func (c *SIOClient) GetAPIResponse(path string, v interface{}) error {
 	fullURL := &url.URL{}
 	*fullURL = *c.address
 	fullURL.Path = path
-	req, _ := http.NewRequest("GET", fullURL.String(), nil)
+	req, err := http.NewRequest("GET", fullURL.String(), nil)
+	if err != nil {
+		return fmt.Errorf("Error while creating request to %s: %v", fullURL.String(), err)
+	}
 	req.Header.Add("Authorization", "Basic "+c.token)
 	resp, err := c.client.Do(req)
 	if err != nil {
